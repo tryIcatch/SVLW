@@ -1,6 +1,6 @@
 # 从 Linux 远程服务器到 Windows VNC：MuJoCo EGL 实时可视化复现教程
 
-> **适用对象**：通过 SSH 使用 Linux 远程计算服务器，希望在 Windows 电脑上查看机器人、物理引擎或机器学习仿真过程的读者。  
+> **适用对象**：通过 SSH 使用 Linux 远程计算服务器，希望在 Windows 电脑上查看机器人、物理引擎或机器学习仿真过程。  
 > **适用系统**：以 Ubuntu 22.04/24.04 Server（GPU EGL 路线假定已安装可用的 NVIDIA 驱动）和 Windows 10/11 为例。  
 > **核心方案**：MuJoCo EGL → RGB 帧 → Xvfb 虚拟屏幕 → x11vnc → SSH 隧道 → Windows TigerVNC Viewer。按照以下步骤从零实现，不依赖某个特定 VLA 项目。
 
@@ -29,11 +29,7 @@
                                 Windows TigerVNC Viewer
 ```
 
-**关键原理：**EGL 负责 GPU 离屏渲染；Xvfb 负责虚拟桌面；x11vnc 负责传输桌面画面。**EGL 渲染出的图像不会自动出现在 Xvfb 上**，所以我们增加一个很轻量的图像桥接器。这个方案用于观看仿真与训练效果，不提供自动的机器人交互控制；如果要在 VNC 里操控机器人，还需要仿真程序自己的输入处理代码。
-
-**验证边界：**这条路线来自实际的 MuJoCo EGL 无头渲染搭建经验，其中 `(256,256,3)` 的 EGL 图像输出已完成验证。虚拟屏幕、VNC 和图像桥接部分是下文提供的可复现部署步骤，应由读者在自己的机器上逐步验收。
-
-**验收目标**：① Windows 上能看到 Linux 虚拟桌面的 xterm；② MuJoCo EGL 输出测试图像；③ Windows VNC 能看到 MuJoCo 中不断移动的小球；④ 断开 Windows VNC 不会终止 Linux 后台仿真。
+关键原理：EGL 负责 GPU 离屏渲染；Xvfb 负责虚拟桌面；x11vnc 负责传输桌面画面。**EGL 渲染出的图像不会自动出现在 Xvfb 上**，所以我们增加一个很轻量的图像桥接器。这个方案用于观看仿真与训练效果，不提供自动的机器人交互控制；如果要在 VNC 里操控机器人，还需要仿真程序自己的输入处理代码。
 
 ## 二、前提条件
 
@@ -97,7 +93,7 @@ touch "$AUTHFILE"
 chmod 600 "$AUTHFILE"
 
 # 为显示器 :1 生成随机授权令牌
-xauth -f "$AUTHFILE" add :1 . "$(mcookie)"
+xauth -f "AUTHFILE" add :1 . "AUTHFILE" add :1 . "(mcookie)"
 ```
 
 ### 4.2 后台启动 Xvfb
@@ -294,14 +290,14 @@ PY
 
 ```bash
 tmux new-session -d -s sim-preview \
-  "DISPLAY=:1 XAUTHORITY=$HOME/.Xauthority-sim /usr/bin/python3 $HOME/remote-sim-viz/frame_viewer.py"
+  "DISPLAY=:1 XAUTHORITY=HOME/.Xauthority−sim/usr/bin/python3HOME/.Xauthority-sim /usr/bin/python3 HOME/remote-sim-viz/frame_viewer.py"
 ```
 
 在 Windows VNC 中应该能看到标题为 `Remote Simulation Preview` 的窗口，它最初显示“等待仿真画面...”。
 
 ### 7.3 准备单独的 MuJoCo Python 环境并测试 EGL
 
-为避免仿真依赖覆盖现有训练项目，先在**独立虚拟环境**中运行演示。下列示例使用 MuJoCo 3.13.0 和 NumPy 1.26.4，读者如已有兼容环境可以沿用自己项目的版本，但不要在正式训练环境中盲目升级依赖。
+为避免仿真依赖覆盖现有训练项目，先在**独立虚拟环境**中运行演示。下列示例使用 MuJoCo 3.13.0 和 NumPy 1.26.4，如已有兼容环境可以沿用自己项目的版本，但不要在正式训练环境中盲目升级依赖。
 
 ```bash
 python3 -m venv "$HOME/remote-sim-viz/.venv"
